@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MailGuard AI - Next-Gen Email Threat Detection, Hop-by-Hop Origin Geolocation & Digital Forensics Incident Platform">
+    <title>MailGuard AI | CyberSOC Email Threat & Forensics Intelligence</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Leaflet CSS for Interactive Geolocation Mapping -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Custom CyberSOC Theme CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- Cyber Background Grid & Ambient Glows -->
+    <div class="cyber-bg-overlay"></div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
+    <!-- Navigation Header -->
+    <header class="top-nav">
+        <div class="nav-brand">
+            <div class="brand-icon">e
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="brand-text">
+                <h1>MAILGUARD <span class="accent-text">AI</span></h1>
+                <span class="subtext">Cyber Threat Detection • Geolocation Trace • Digital Forensics SOC</span>
+            </div>
+        </div>
+
+        <div class="nav-telemetry">
+            <div class="telemetry-pill">
+                <span class="pulse-dot online"></span>
+                <span class="label">AI ENGINE:</span>
+                <span class="val">ACTIVE (v2.6)</span>
+            </div>
+            <div class="telemetry-pill">
+                <i class="fa-solid fa-satellite-dish"></i>
+                <span class="label">GEO-IP:</span>
+                <span class="val">ONLINE</span>
+            </div>
+            <button class="docket-btn" id="openDocketBtn" onclick="toggleDocketModal()">
+                <i class="fa-solid fa-folder-closed"></i>
+                <span>SOC Incident Docket</span>
+                <span class="badge-count" id="docketBadgeCount">1</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main SOC Workspace Container -->
+    <div class="soc-container">
+
+        <!-- Top Threat Telemetry Counter Strip -->
+        <section class="telemetry-strip">
+            <div class="telemetry-card">
+                <div class="card-icon cyan"><i class="fa-solid fa-shield-virus"></i></div>
+                <div class="card-info">
+                    <span class="card-label">Threats Classified</span>
+                    <span class="card-val" id="statClassified">1,482</span>
+                </div>
+            </div>
+            <div class="telemetry-card">
+                <div class="card-icon red"><i class="fa-solid fa-skull-crossbones"></i></div>
+                <div class="card-info">
+                    <span class="card-label">High-Risk Quarantined</span>
+                    <span class="card-val" id="statQuarantine">439</span>
+                </div>
+            </div>
+            <div class="telemetry-card">
+                <div class="card-icon yellow"><i class="fa-solid fa-route"></i></div>
+                <div class="card-info">
+                    <span class="card-label">SMTP Hops Traced</span>
+                    <span class="card-val" id="statHops">4,912</span>
+                </div>
+            </div>
+            <div class="telemetry-card">
+                <div class="card-icon green"><i class="fa-solid fa-fingerprint"></i></div>
+                <div class="card-info">
+                    <span class="card-label">Forensic Dossiers</span>
+                    <span class="card-val" id="statDossiers">218</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Threat Sample Scenarios Quick-Selector -->
+        <section class="samples-section">
+            <div class="samples-header">
+                <span class="samples-title"><i class="fa-solid fa-flask"></i> <strong>Load Pre-built Threat Scenarios:</strong></span>
+                <span class="samples-desc">Click any real-world incident below to test AI detection, origin hop mapping & forensics instantly:</span>
+            </div>
+            <div class="sample-pills" id="samplePillsContainer">
+                <button class="sample-pill active" onclick="loadSample('bec_wire_fraud')">
+                    <span class="dot red"></span>
+                    <span class="pill-name">🚨 CEO Wire Fraud (BEC / Spoof)</span>
+                </button>
+                <button class="sample-pill" onclick="loadSample('m365_credential_phish')">
+                    <span class="dot red"></span>
+                    <span class="pill-name">🎣 Microsoft 365 Credential Harvest</span>
+                </button>
+                <button class="sample-pill" onclick="loadSample('ransomware_invoice_drop')">
+                    <span class="dot red"></span>
+                    <span class="pill-name">☣️ Invoice Ransomware Payload</span>
+                </button>
+                <button class="sample-pill" onclick="loadSample('paypal_compromise_alert')">
+                    <span class="dot yellow"></span>
+                    <span class="pill-name">🛑 PayPal Account Lockout Phish</span>
+                </button>
+                <button class="sample-pill" onclick="loadSample('clean_corporate_newsletter')">
+                    <span class="dot green"></span>
+                    <span class="pill-name">🟢 Legitimate Corporate Memo</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Interactive Dual-Panel Workspace -->
+        <main class="workspace-grid">
+
+            <!-- LEFT PANEL: Email Ingestion & Analysis Controls -->
+            <section class="panel left-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-terminal"></i>
+                        <h2>Email Ingestion & Ingress Sensor</h2>
+                    </div>
+                    <div class="mode-toggle">
+                        <button class="mode-btn active" id="modePasteBtn" onclick="switchInputMode('paste')">
+                            <i class="fa-solid fa-paste"></i> Raw Text / Headers
+                        </button>
+                        <button class="mode-btn" id="modeUploadBtn" onclick="switchInputMode('upload')">
+                            <i class="fa-solid fa-file-arrow-up"></i> Upload .EML
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Textarea Mode -->
+                <div id="pasteInputArea" class="input-area active">
+                    <div class="editor-wrapper">
+                        <textarea
+                            id="emailTextInput"
+                            placeholder="Paste RFC 822 email with headers (Received, From, Subject, Authentication-Results) or raw email text here..."
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+                </div>
+
+                <!-- EML Upload Mode -->
+                <div id="uploadInputArea" class="input-area">
+                    <div class="dropzone" id="emlDropzone" onclick="document.getElementById('emlFileInput').click()">
+                        <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+                        <h3>Drop .EML or .MSG File Here</h3>
+                        <p>or click to browse from your workstation</p>
+                        <span class="file-chosen-name" id="fileNameDisplay">No file chosen</span>
+                        <input type="file" id="emlFileInput" accept=".eml,.msg,.txt" style="display:none" onchange="handleFileSelect(event)">
+                    </div>
+                </div>
+
+                <!-- Action Button Controls -->
+                <div class="action-bar">
+                    <button class="btn-clear" onclick="clearInput()" title="Clear email text">
+                        <i class="fa-solid fa-trash-can"></i> Clear
+                    </button>
+                    <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">
+                        <span class="btn-content">
+                            <i class="fa-solid fa-microchip-ai"></i>
+                            <strong>SCAN & TRACE THREAT</strong>
+                        </span>
+                        <div class="btn-spinner" style="display:none;">
+                            <i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing...
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Live Analysis Scanning Progress Bar -->
+                <div class="scan-progress-box" id="scanProgressBox" style="display:none;">
+                    <div class="scan-step-title" id="scanStepText"><i class="fa-solid fa-radar"></i> Initializing AI Cyber Scanner...</div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="scanProgressBar"></div>
+                    </div>
+                </div>
+
+                <!-- Quick Header Summary Card (Populated after scan) -->
+                <div class="header-summary-card" id="headerSummaryCard" style="display:none;">
+                    <div class="summary-row">
+                        <span class="s-label"><i class="fa-solid fa-user-secret"></i> Sender:</span>
+                        <span class="s-val" id="summarySender">--</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="s-label"><i class="fa-solid fa-heading"></i> Subject:</span>
+                        <span class="s-val" id="summarySubject">--</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="s-label"><i class="fa-solid fa-network-wired"></i> Origin IP:</span>
+                        <span class="s-val code-font" id="summaryOriginIP">--</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="s-label"><i class="fa-solid fa-location-dot"></i> Origin Geo:</span>
+                        <span class="s-val" id="summaryOriginGeo">--</span>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- RIGHT PANEL: Multi-Tab Threat Intelligence & Forensics Results -->
+            <section class="panel right-panel">
+                
+                <!-- Tab Navigation Bar -->
+                <div class="intel-tabs">
+                    <button class="tab-btn active" onclick="switchTab('tabThreat')">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Threat Intelligence</span>
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('tabGeo')">
+                        <i class="fa-solid fa-earth-americas"></i>
+                        <span>Origin Geolocation & Map</span>
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('tabForensics')">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        <span>Header Forensics & IoCs</span>
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('tabDocket')">
+                        <i class="fa-solid fa-file-shield"></i>
+                        <span>Forensics Case Dossier</span>
+                    </button>
+                </div>
+
+                <!-- TAB 1: THREAT INTELLIGENCE & SCORECARD -->
+                <div id="tabThreat" class="tab-content active">
+                    
+                    <!-- Threat Score Gauge & Verdict Banner -->
+                    <div class="verdict-banner" id="verdictBanner">
+                        <div class="gauge-container">
+                            <svg class="gauge-svg" viewBox="0 0 120 120">
+                                <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+                                <circle class="gauge-fill" id="gaugeCircle" cx="60" cy="60" r="50"></circle>
+                            </svg>
+                            <div class="gauge-text">
+                                <span class="score-num" id="threatScoreDisplay">--</span>
+                                <span class="score-sub">/ 100</span>
+                            </div>
+                        </div>
+
+                        <div class="verdict-details">
+                            <div class="risk-badge-row">
+                                <span class="risk-badge" id="threatBadge">AWAITING SCAN</span>
+                                <span class="verdict-tag" id="threatVerdict">IDLE</span>
+                            </div>
+                            <h3 class="threat-title" id="threatPrimaryTitle">Ready to analyze suspicious email</h3>
+                            <p class="threat-desc" id="threatSummaryDesc">Paste email contents or load a scenario to trigger AI multi-layer heuristic scanning.</p>
+                        </div>
+                    </div>
+
+                    <!-- MITRE ATT&CK Matrix Mapping -->
+                    <div class="section-block">
+                        <div class="block-title">
+                            <i class="fa-solid fa-diagram-project"></i>
+                            <h4>MITRE ATT&CK® Framework Mapping</h4>
+                        </div>
+                        <div class="mitre-tags" id="mitreContainer">
+                            <span class="empty-placeholder">No threat behaviors detected yet.</span>
+                        </div>
+                    </div>
+
+                    <!-- Risk Factors & Heuristic Findings Breakdown -->
+                    <div class="section-block">
+                        <div class="block-title">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <h4>AI Heuristic Risk Findings</h4>
+                        </div>
+                        <div class="risk-factors-list" id="riskFactorsContainer">
+                            <div class="empty-state">
+                                <i class="fa-solid fa-radar"></i>
+                                <p>Ingest an email to run heuristic vulnerability detection.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Incident Remediation Recommendations -->
+                    <div class="section-block">
+                        <div class="block-title">
+                            <i class="fa-solid fa-clipboard-check"></i>
+                            <h4>SOC Analyst Remediation Checklist</h4>
+                        </div>
+                        <ul class="remediation-list" id="remediationContainer">
+                            <li><i class="fa-solid fa-circle-check"></i> Load email to generate tactical incident response steps.</li>
+                        </ul>
+                    </div>
+
+                </div>
+
+
+                <!-- TAB 2: ORIGIN GEOLOCATION & TRANSIT ROUTE MAP -->
+                <div id="tabGeo" class="tab-content">
+                    
+                    <div class="geo-top-bar">
+                        <div class="origin-hero-card" id="originHeroCard">
+                            <div class="origin-flag-icon" id="originCountryFlag"><i class="fa-solid fa-globe"></i></div>
+                            <div class="origin-hero-info">
+                                <span class="origin-sub">IDENTIFIED ORIGINATING HOST</span>
+                                <h3 id="originLocationText">Unknown Location</h3>
+                                <div class="origin-ip-meta">
+                                    <span class="code-badge" id="originIPTag"><i class="fa-solid fa-network-wired"></i> IP: --</span>
+                                    <span class="code-badge" id="originISPTag"><i class="fa-solid fa-server"></i> ISP: --</span>
+                                    <span class="code-badge" id="originASNTag"><i class="fa-solid fa-hashtag"></i> ASN: --</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leaflet Interactive Map Canvas -->
+                    <div class="map-container">
+                        <div class="map-overlay-badge">
+                            <span class="pulse-dot red"></span>
+                            <span id="mapHopCounter">Transit Hops: 0</span>
+                        </div>
+                        <div id="threatMap"></div>
+                    </div>
+
+                    <!-- Hop-by-Hop SMTP Transit Timeline -->
+                    <div class="section-block">
+                        <div class="block-title">
+                            <i class="fa-solid fa-timeline"></i>
+                            <h4>Hop-by-Hop SMTP Transit Chain (Reverse Traversal)</h4>
+                        </div>
+                        <div class="hops-timeline" id="hopsTimelineContainer">
+                            <span class="empty-placeholder">No transit hops traced.</span>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <!-- TAB 3: HEADER FORENSICS & IOCS -->
+                <div id="tabForensics" class="tab-content">
+                    
+                    <!-- Evidence Hashes (Chain of Custody) -->
+                    <div class="section-block">
+                        <div class="block-title">
+                            <i class="fa-solid fa-fingerprint"></i>
+                            <h4>Cryptographic Evidence Fingerprint (Chain of Custody)</h4>
+                        </div>
+                        <div class="hashes-grid">
+                            <div class="hash-box">
+                                <div class="hash-label">
+                                    <span>SHA-256 HASH</span>
+                                    <button class="copy-icon-btn" onclick="copyText('evidenceSha256')"><i class="fa-regular fa-copy"></i></button>
+                                </div>
+                                <div class="hash-value code-font" id="evidenceSha256">--</div>
+                            </div>
+                            <div class="hash-box">
+                                <div class="hash-label">
+                                    <span>MD5 HASH</span>
+                                    <button class="copy-icon-btn" onclick="copyText('evidenceMd5')"><i class="fa-regular fa-copy"></i></button>
+                                </div>
+                                <div class="hash-value code-font" id="evidenceMd5">--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Authentication Header Status (SPF / DKIM / DMARC) -->
+                    <div class="section-block">
+                        <div class="block-title">
+                            <i class="fa-solid fa-certificate"></i>
+                            <h4>Email Authentication & Domain Verification</h4>
+                        </div>
+                        <div class="auth-grid">
+                            <div class="auth-card" id="authSpfCard">
+                                <span class="auth-title">SPF (Sender Policy Framework)</span>
+                                <span class="auth-status badge-neutral" id="spfStatusBadge">NOT CHECKED</span>
+                            </div>
+                            <div class="auth-card" id="authDkimCard">
+                                <span class="auth-title">DKIM (DomainKeys Identified Mail)</span>
+                                <span class="auth-status badge-neutral" id="dkimStatusBadge">NOT CHECKED</span>
+                            </div>
+                            <div class="auth-card" id="authDmarcCard">
+                                <span class="auth-title">DMARC (Domain-based Auth)</span>
+                                <span class="auth-status badge-neutral" id="dmarcStatusBadge">NOT CHECKED</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Structured Indicators of Compromise (IoCs) -->
+                    <div class="section-block">
+                        <div class="block-title flex-between">
+                            <div>
+                                <i class="fa-solid fa-list-check"></i>
+                                <h4>Extracted Indicators of Compromise (IoCs)</h4>
+                            </div>
+                            <button class="btn-sm" onclick="copyAllIoCs()"><i class="fa-regular fa-copy"></i> Copy All Defanged IoCs</button>
+                        </div>
+                        <div class="ioc-table-wrapper">
+                            <table class="ioc-table">
+                                <thead>
+                                    <tr>
+                                        <th>Artifact Type</th>
+                                        <th>Defanged IoC Value</th>
+                                        <th>Threat Context</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="iocTableBody">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No IoCs extracted yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Collapsible Raw Header Inspector -->
+                    <div class="section-block">
+                        <details class="header-accordion">
+                            <summary class="block-title">
+                                <i class="fa-solid fa-code"></i>
+                                <span>Parsed RFC Header Inspector</span>
+                                <span class="accordion-arrow"><i class="fa-solid fa-chevron-down"></i></span>
+                            </summary>
+                            <pre class="header-raw-viewer code-font" id="rawHeadersViewer">Awaiting email ingestion...</pre>
+                        </details>
+                    </div>
+
+                </div>
+
+
+                <!-- TAB 4: FORENSICS CASE DOSSIER & DISPATCH -->
+                <div id="tabDocket" class="tab-content">
+                    
+                    <div class="docket-action-banner">
+                        <div class="docket-banner-text">
+                            <h3><i class="fa-solid fa-file-signature"></i> Digital Forensics Incident Case</h3>
+                            <p>Generate formal DFIR evidence docket, dispatch incident ticket to SOC Tier-2, or export STIX 2.1 Threat Intelligence bundle.</p>
+                        </div>
+                        <div class="docket-btns">
+                            <button class="btn-dispatch" id="dispatchSocBtn" onclick="dispatchToForensics()">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <strong>DISPATCH TO FORENSICS SOC</strong>
+                            </button>
+                            <button class="btn-print" onclick="openPrintableReport()">
+                                <i class="fa-solid fa-print"></i> Print Dossier (PDF)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Active Incident Dossier Preview -->
+                    <div class="dossier-preview-card" id="dossierCard">
+                        <div class="dossier-header">
+                            <div>
+                                <span class="dossier-case-tag" id="dossierCaseId">CASE: DRAFT</span>
+                                <h3 id="dossierTitle">Email Threat Forensics Summary</h3>
+                            </div>
+                            <div class="dossier-meta-tags">
+                                <span class="priority-pill red" id="dossierPriority">P1 - CRITICAL</span>
+                                <span class="status-pill blue" id="dossierStatus">DRAFT</span>
+                            </div>
+                        </div>
+
+                        <div class="dossier-grid">
+                            <div class="dossier-field">
+                                <span class="f-label">INCIDENT CLASSIFICATION:</span>
+                                <span class="f-val" id="dossierClass">--</span>
+                            </div>
+                            <div class="dossier-field">
+                                <span class="f-label">SUSPECT ORIGIN IP:</span>
+                                <span class="f-val code-font" id="dossierIP">--</span>
+                            </div>
+                            <div class="dossier-field">
+                                <span class="f-label">GEOLOCATION ORIGIN:</span>
+                                <span class="f-val" id="dossierGeo">--</span>
+                            </div>
+                            <div class="dossier-field">
+                                <span class="f-label">TARGET RECIPIENT:</span>
+                                <span class="f-val" id="dossierTarget">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Analyst Notes Input -->
+                        <div class="analyst-notes-box">
+                            <label for="analystNotesText"><i class="fa-solid fa-pen-nib"></i> Forensic Analyst Triage Notes:</label>
+                            <textarea id="analystNotesText" placeholder="Add forensic observations, initial containment actions, or VIP threat notes before dispatching..."></textarea>
+                        </div>
+
+                        <!-- Export STIX 2.1 JSON Button -->
+                        <div class="export-bar">
+                            <button class="btn-stix" id="downloadStixBtn" onclick="downloadStix()">
+                                <i class="fa-solid fa-download"></i> Export STIX 2.1 Threat Intel Bundle (JSON)
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- MODAL 1: SOC INCIDENT DOCKET MANAGER -->
+    <div class="modal-backdrop" id="docketModal" style="display:none;">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <h2>SOC Forensics Incident Docket</h2>
+                </div>
+                <button class="modal-close-btn" onclick="toggleDocketModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-sub">Real-time registry of all email threat incidents reported to the Cyber Forensics team.</p>
+                <div class="incidents-table-wrapper">
+                    <table class="incidents-table">
+                        <thead>
+                            <tr>
+                                <th>Case ID</th>
+                                <th>Timestamp</th>
+                                <th>Threat Subject</th>
+                                <th>Origin IP / Geo</th>
+                                <th>Score</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="incidentsTableBody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="toggleDocketModal()">Close Docket</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL 2: PRINTABLE FORENSIC DOSSIER MODAL -->
+    <div class="modal-backdrop" id="printModal" style="display:none;">
+        <div class="modal-dialog print-modal-dialog">
+            <div class="modal-header no-print">
+                <div class="modal-title">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <h2>Digital Forensics Incident Report (Formal Dossier)</h2>
+                </div>
+                <div class="modal-header-actions">
+                    <button class="btn-analyze btn-print-now" onclick="window.print()">
+                        <i class="fa-solid fa-print"></i> Print / Save as PDF
+                    </button>
+                    <button class="modal-close-btn" onclick="togglePrintModal()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            
+            <!-- PRINTABLE REPORT CONTENT -->
+            <div class="printable-dossier-sheet" id="printableDossierContent">
+                
+                <div class="formal-report-header">
+                    <div class="report-org-brand">
+                        <h2>MAILGUARD CYBER DEFENSE SOC</h2>
+                        <span>DIGITAL FORENSICS & INCIDENT RESPONSE (DFIR) DIVISION</span>
+                    </div>
+                    <div class="report-case-badge">
+                        <span class="report-badge-title">INCIDENT EVIDENCE DOSSIER</span>
+                        <h3 id="printCaseId">CASE-2026-89421</h3>
+                        <span id="printDate">Date: Mon, 07 Sep 2026</span>
+                    </div>
+                </div>
+
+                <div class="report-classification-strip">
+                    <span>SECURITY CLASSIFICATION: <strong>TLP:AMBER+STRICT</strong></span>
+                    <span>CHAIN OF CUSTODY: <strong>VERIFIED SHA-256</strong></span>
+                </div>
+
+                <section class="report-section">
+                    <h3 class="rep-heading">1. EXECUTIVE THREAT SUMMARY</h3>
+                    <table class="rep-table">
+                        <tr>
+                            <td class="rep-label">Primary Classification:</td>
+                            <td class="rep-val" id="printPrimaryThreat">--</td>
+                            <td class="rep-label">Threat Score / Risk:</td>
+                            <td class="rep-val" id="printThreatScore">--</td>
+                        </tr>
+                        <tr>
+                            <td class="rep-label">Sender Identity:</td>
+                            <td class="rep-val" id="printSender">--</td>
+                            <td class="rep-label">Target Recipient:</td>
+                            <td class="rep-val" id="printRecipient">--</td>
+                        </tr>
+                        <tr>
+                            <td class="rep-label">Email Subject:</td>
+                            <td class="rep-val" colspan="3" id="printSubject">--</td>
+                        </tr>
+                    </table>
+                </section>
+
+                <section class="report-section">
+                    <h3 class="rep-heading">2. ORIGIN GEOLOCATION & SMTP TRANSIT FORENSICS</h3>
+                    <table class="rep-table">
+                        <tr>
+                            <td class="rep-label">Identified Origin IP:</td>
+                            <td class="rep-val code-font" id="printOriginIP">--</td>
+                            <td class="rep-label">Origin Location:</td>
+                            <td class="rep-val" id="printOriginGeo">--</td>
+                        </tr>
+                        <tr>
+                            <td class="rep-label">Origin ISP / Network:</td>
+                            <td class="rep-val" id="printOriginISP">--</td>
+                            <td class="rep-label">Autonomous System (ASN):</td>
+                            <td class="rep-val" id="printOriginASN">--</td>
+                        </tr>
+                        <tr>
+                            <td class="rep-label">Transit Hop Count:</td>
+                            <td class="rep-val" colspan="3" id="printHopSummary">--</td>
+                        </tr>
+                    </table>
+                </section>
+
+                <section class="report-section">
+                    <h3 class="rep-heading">3. CRYPTOGRAPHIC CHAIN OF CUSTODY</h3>
+                    <table class="rep-table">
+                        <tr>
+                            <td class="rep-label">SHA-256 Evidence Hash:</td>
+                            <td class="rep-val code-font" colspan="3" id="printSha256">--</td>
+                        </tr>
+                        <tr>
+                            <td class="rep-label">MD5 Evidence Hash:</td>
+                            <td class="rep-val code-font" colspan="3" id="printMd5">--</td>
+                        </tr>
+                    </table>
+                </section>
+
+                <section class="report-section">
+                    <h3 class="rep-heading">4. EXTRACTED INDICATORS OF COMPROMISE (IoCs)</h3>
+                    <div id="printIocContainer">
+                        <!-- IoC entries for printing -->
+                    </div>
+                </section>
+
+                <section class="report-section">
+                    <h3 class="rep-heading">5. SOC INCIDENT RESPONSE & CONTAINMENT DIRECTIVE</h3>
+                    <ul id="printRemediationList" class="rep-bullets">
+                        <!-- Bullets for printing -->
+                    </ul>
+                </section>
+
+                <div class="report-footer-signoff">
+                    <div class="signoff-box">
+                        <span>Investigating Forensics Lead:</span>
+                        <div class="sign-line"></div>
+                        <span>DFIR Tier-2 Specialist</span>
+                    </div>
+                    <div class="signoff-box">
+                        <span>SOC Operations Director:</span>
+                        <div class="sign-line"></div>
+                        <span>Security Operations Center</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastNotification" class="cyber-toast">
+        <i class="fa-solid fa-bell toast-icon"></i>
+        <span id="toastMessage">Notification message</span>
+    </div>
+
+    <!-- Leaflet JS for Mapping -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Application Logic Script -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
